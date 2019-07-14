@@ -1,0 +1,89 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jul 13 16:29:22 2019
+
+@author: Manisha
+"""
+import pandas as pd
+import numpy as np
+import os
+from sklearn import tree, metrics, model_selection, ensemble
+from sklearn import linear_model
+from sklearn import feature_selection
+import seaborn as sns
+import math
+
+os.chdir("C:\\Users\\sai\\Downloads\\restaurant-revenue-prediction")
+
+# Read train data into data frame
+restaurant_train = pd.read_csv("restaurant_train.csv")
+restaurant_train.shape
+restaurant_train.info()
+
+# Read test data into data frame
+restaurant_test = pd.read_csv("restaurant_test.csv")
+restaurant_test.shape
+restaurant_test.info()
+
+# Combine both train and test data to remove unwanted columns and do 1-Hot Encoding
+res_data = pd.concat([restaurant_train,restaurant_test ])
+res_data.drop(["Id", "revenue"], 1, inplace = True)
+res_data.shape
+res_data.info()
+
+# To check whether the data has any null columns
+has_null_columns = res_data.isnull().sum()
+
+#Numerical Columns....separating numerical columns by using data type
+numeric_cols = res_data.select_dtypes(include = ["number"]).columns
+#Storing Categoric columns into one variable named cat_cols
+cat_cols = res_data.select_dtypes(exclude = ["number"]).columns
+
+# Doing One hot encoding for only Categorical columns
+res_data1 = pd.get_dummies(res_data, columns = cat_cols)
+res_data1.shape
+res_data1.info()
+
+# Plotting revenue
+x = restaurant_train["revenue"]
+sns.distplot(x, kde = False)
+
+#Splitting train data as concatened as in the beginning
+res_train1 = res_data1[:restaurant_train.shape[0]]
+
+#Splitting test data as well.....
+res_test1 = res_data1[restaurant_train.shape[0] : ]
+
+# Get the shape of train and test data after splitting
+res_train1.shape
+res_test1.shape
+
+#Applying log to revenue column (to take care of extreme low and high values)
+restaurant_train['log_revenue'] = np.log(restaurant_train['revenue'])
+
+#Plotting for log revenue
+x = restaurant_train['log_revenue']
+sns.distplot(x, kde = False)
+
+X_train = res_train1
+Y_train = restaurant_train['revenue']
+
+# Using RMSE i.e. Root Mean Square Error
+def rmse(y_original, y_pred):
+    return math.sqrt(metrics.mean_squared_error(y_original, y_pred))
+
+#Model 1
+# Building using Random Forest
+selector = ensemble.RandomForestRegressor(random_state = 100)
+selector.fit(X_train, Y_train)
+
+# Applying predict method on to test data
+X_test = res_test1
+Y_test = selector.predict(X_test)
+restaurant_test['Prediction'] = Y_test
+restaurant_test.to_csv("Restaurant_Pred_RF.csv", columns = ["Id","Prediction"], index = False) 
+
+
+
+
+
